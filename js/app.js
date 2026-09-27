@@ -1,7 +1,9 @@
 /**
  * CHAKRIYA Clinic System - Core Application JS
- * Manages central state, localStorage persistence, and helper functions.
+ * Supports PostgreSQL 18 Backend API (http://localhost:5000/api) with LocalStorage sync & fallback.
  */
+
+const API_BASE_URL = 'http://localhost:5000/api';
 
 const STORAGE_KEYS = {
   PATIENTS: 'chakriya_patients',
@@ -11,7 +13,6 @@ const STORAGE_KEYS = {
   DOCTORS: 'chakriya_doctors'
 };
 
-// Available Doctors in CHAKRIYA Clinic
 const INITIAL_DOCTORS = [
   { id: 'DOC01', name: 'Dr. Chakriya Samreth', specialty: 'General Physician', phone: '+855 12 345 678', room: 'Cabinet 101' },
   { id: 'DOC02', name: 'Dr. Sarah Jenkins', specialty: 'Pediatrics', phone: '+855 16 888 999', room: 'Cabinet 102' },
@@ -19,16 +20,51 @@ const INITIAL_DOCTORS = [
   { id: 'DOC04', name: 'Dr. Sophea Nguon', specialty: 'Dentistry', phone: '+855 92 555 444', room: 'Cabinet 105' }
 ];
 
-// Clean Slate Initial Data (No dummy/hardcoded patient records)
-const INITIAL_PATIENTS = [];
-const INITIAL_APPOINTMENTS = [];
-const INITIAL_RECORDS = [];
-const INITIAL_INVOICES = [];
-
-// Clinic System App State Controller
 class ClinicApp {
   constructor() {
+    this.isBackendOnline = false;
     this.initStorage();
+    this.checkBackendHealth();
+  }
+
+  async checkBackendHealth() {
+    try {
+      const res = await fetch(`${API_BASE_URL}/health`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.database === 'connected') {
+          this.isBackendOnline = true;
+          console.log('✅ Connected to PostgreSQL 18 Backend!');
+          await this.syncFromBackend();
+          return;
+        }
+      }
+    } catch (e) {
+      console.log('ℹ️ Operating in Browser Storage mode. Backend offline or initializing.');
+    }
+    this.isBackendOnline = false;
+  }
+
+  async syncFromBackend() {
+    try {
+      const [patients, appointments, records, invoices, doctors] = await Promise.all([
+        fetch(`${API_BASE_URL}/patients`).then(r => r.json()),
+        fetch(`${API_BASE_URL}/appointments`).then(r => r.json()),
+        fetch(`${API_BASE_URL}/records`).then(r => r.json()),
+        fetch(`${API_BASE_URL}/invoices`).then(r => r.json()),
+        fetch(`${API_BASE_URL}/doctors`).then(r => r.json())
+      ]);
+
+      if (Array.isArray(patients)) this.savePatients(patients);
+      if (Array.isArray(appointments)) this.saveAppointments(appointments);
+      if (Array.isArray(records)) this.saveRecords(records);
+      if (Array.isArray(invoices)) this.saveInvoices(invoices);
+      if (Array.isArray(doctors) && doctors.length > 0) {
+        localStorage.setItem(STORAGE_KEYS.DOCTORS, JSON.stringify(doctors));
+      }
+    } catch (err) {
+      console.error('Error syncing from PostgreSQL backend:', err);
+    }
   }
 
   initStorage() {
@@ -36,27 +72,20 @@ class ClinicApp {
       localStorage.setItem(STORAGE_KEYS.DOCTORS, JSON.stringify(INITIAL_DOCTORS));
     }
     if (!localStorage.getItem(STORAGE_KEYS.PATIENTS)) {
-      localStorage.setItem(STORAGE_KEYS.PATIENTS, JSON.stringify(INITIAL_PATIENTS));
+      localStorage.setItem(STORAGE_KEYS.PATIENTS, JSON.stringify([]));
     }
     if (!localStorage.getItem(STORAGE_KEYS.APPOINTMENTS)) {
-      localStorage.setItem(STORAGE_KEYS.APPOINTMENTS, JSON.stringify(INITIAL_APPOINTMENTS));
+      localStorage.setItem(STORAGE_KEYS.APPOINTMENTS, JSON.stringify([]));
     }
     if (!localStorage.getItem(STORAGE_KEYS.RECORDS)) {
-      localStorage.setItem(STORAGE_KEYS.RECORDS, JSON.stringify(INITIAL_RECORDS));
+      localStorage.setItem(STORAGE_KEYS.RECORDS, JSON.stringify([]));
     }
     if (!localStorage.getItem(STORAGE_KEYS.INVOICES)) {
-      localStorage.setItem(STORAGE_KEYS.INVOICES, JSON.stringify(INITIAL_INVOICES));
+      localStorage.setItem(STORAGE_KEYS.INVOICES, JSON.stringify([]));
     }
   }
 
-  // Clear all saved data completely from LocalStorage
   clearAllData() {
-    localStorage.removeItem(STORAGE_KEYS.PATIENTS);
-    localStorage.removeItem(STORAGE_KEYS.APPOINTMENTS);
-    localStorage.removeItem(STORAGE_KEYS.RECORDS);
-    localStorage.removeItem(STORAGE_KEYS.INVOICES);
-    
-    // Re-initialize empty storage
     localStorage.setItem(STORAGE_KEYS.PATIENTS, JSON.stringify([]));
     localStorage.setItem(STORAGE_KEYS.APPOINTMENTS, JSON.stringify([]));
     localStorage.setItem(STORAGE_KEYS.RECORDS, JSON.stringify([]));
@@ -73,7 +102,7 @@ class ClinicApp {
   }
 
   getDoctors() {
-    return JSON.parse(localStorage.getItem(STORAGE_KEYS.DOCTORS)) || [];
+    return JSON.parse(localStorage.getItem(STORAGE_KEYS.DOCTORS)) || INITIAL_DOCTORS;
   }
 
   getRecords() {
@@ -112,6 +141,15 @@ class ClinicApp {
     };
     patients.unshift(newPatient);
     this.savePatients(patients);
+
+    if (this.isBackendOnline) {
+      fetch(`${API_BASE_URL}/patients`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(patientData)
+      }).catch(err => console.error('PostgreSQL Patient save error:', err));
+    }
+
     return newPatient;
   }
 
@@ -119,6 +157,11 @@ class ClinicApp {
     let patients = this.getPatients();
     patients = patients.filter(p => p.id !== id);
     this.savePatients(patients);
+
+    if (this.isBackendOnline) {
+      fetch(`${API_BASE_URL}/patients/${id}`, { method: 'DELETE' })
+        .catch(err => console.error('PostgreSQL Patient delete error:', err));
+    }
   }
 
   // Appointment CRUD
@@ -132,6 +175,15 @@ class ClinicApp {
     };
     appointments.unshift(newApt);
     this.saveAppointments(appointments);
+
+    if (this.isBackendOnline) {
+      fetch(`${API_BASE_URL}/appointments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(aptData)
+      }).catch(err => console.error('PostgreSQL Appointment save error:', err));
+    }
+
     return newApt;
   }
 
@@ -142,12 +194,25 @@ class ClinicApp {
       apt.status = newStatus;
       this.saveAppointments(appointments);
     }
+
+    if (this.isBackendOnline) {
+      fetch(`${API_BASE_URL}/appointments/${id}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      }).catch(err => console.error('PostgreSQL Appointment status error:', err));
+    }
   }
 
   deleteAppointment(id) {
     let appointments = this.getAppointments();
     appointments = appointments.filter(a => a.id !== id);
     this.saveAppointments(appointments);
+
+    if (this.isBackendOnline) {
+      fetch(`${API_BASE_URL}/appointments/${id}`, { method: 'DELETE' })
+        .catch(err => console.error('PostgreSQL Appointment delete error:', err));
+    }
   }
 
   // Medical Record & Invoice CRUD
@@ -161,6 +226,15 @@ class ClinicApp {
     };
     records.unshift(newRecord);
     this.saveRecords(records);
+
+    if (this.isBackendOnline) {
+      fetch(`${API_BASE_URL}/records`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(recordData)
+      }).catch(err => console.error('PostgreSQL Record save error:', err));
+    }
+
     return newRecord;
   }
 
@@ -174,6 +248,15 @@ class ClinicApp {
     };
     invoices.unshift(newInvoice);
     this.saveInvoices(invoices);
+
+    if (this.isBackendOnline) {
+      fetch(`${API_BASE_URL}/invoices`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(invoiceData)
+      }).catch(err => console.error('PostgreSQL Invoice save error:', err));
+    }
+
     return newInvoice;
   }
 
@@ -185,13 +268,18 @@ class ClinicApp {
       if (method) inv.paymentMethod = method;
       this.saveInvoices(invoices);
     }
+
+    if (this.isBackendOnline) {
+      fetch(`${API_BASE_URL}/invoices/${id}/payment`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status, method })
+      }).catch(err => console.error('PostgreSQL Invoice payment error:', err));
+    }
   }
 }
 
 const clinicApp = new ClinicApp();
-
-// Automatically perform hard clear on application boot if requested
-clinicApp.clearAllData();
 
 // Helper UI Toast Notification
 function showToast(message, type = 'success') {
@@ -216,23 +304,18 @@ function showToast(message, type = 'success') {
   }, 3500);
 }
 
-// Global Modal Toggle Helpers
 function openModal(modalId) {
   const modal = document.getElementById(modalId);
-  if (modal) {
-    modal.classList.add('active');
-  }
+  if (modal) modal.classList.add('active');
 }
 
 function closeModal(modalId) {
   const modal = document.getElementById(modalId);
-  if (modal) {
-    modal.classList.remove('active');
-  }
+  if (modal) modal.classList.remove('active');
 }
 
 function triggerClearData() {
-  if (confirm('Are you sure you want to clear all hard data and reset system records?')) {
+  if (confirm('Are you sure you want to clear all data and reset system records?')) {
     clinicApp.clearAllData();
     showToast('All system data cleared successfully!', 'error');
     setTimeout(() => location.reload(), 800);
