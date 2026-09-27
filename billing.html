@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Medical Records & Billing - CHAKRIYA Clinic System</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+  <!-- Sidebar Navigation -->
+  <aside class="sidebar">
+    <div class="brand-header">
+      <div class="brand-icon">
+        <i class="fas fa-heartbeat"></i>
+      </div>
+      <div>
+        <div class="brand-title">CHAKRIYA</div>
+        <div class="brand-subtitle">Clinic System</div>
+      </div>
+    </div>
+
+    <ul class="nav-list">
+      <li class="nav-item">
+        <a href="index.html">
+          <i class="fas fa-chart-pie"></i>
+          <span>Dashboard</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="patients.html">
+          <i class="fas fa-user-injured"></i>
+          <span>Patient Management</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="appointments.html">
+          <i class="fas fa-calendar-alt"></i>
+          <span>Appointments</span>
+        </a>
+      </li>
+      <li class="nav-item active">
+        <a href="billing.html">
+          <i class="fas fa-file-invoice-dollar"></i>
+          <span>Records & Billing</span>
+        </a>
+      </li>
+    </ul>
+
+    <div class="sidebar-footer">
+      <p><i class="fas fa-clinic-medical"></i> CHAKRIYA Clinic v1.0</p>
+      <button class="btn btn-danger btn-sm" onclick="triggerClearData()" style="margin-top: 8px; width: 100%; justify-content: center; font-size: 0.75rem;">
+        <i class="fas fa-trash-alt"></i> Clear System Data
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main Wrapper -->
+  <div class="main-wrapper">
+    <!-- Top Header Navigation -->
+    <header class="top-header">
+      <div class="header-title-area">
+        <h1>Medical Records & Invoicing</h1>
+        <p>Document patient diagnoses, prescriptions, and financial billing</p>
+      </div>
+
+      <div class="header-actions">
+        <button class="btn btn-primary" onclick="openModal('addRecordModal')">
+          <i class="fas fa-notes-medical"></i> New Medical Record
+        </button>
+        <button class="btn btn-secondary" onclick="openModal('createInvoiceModal')">
+          <i class="fas fa-receipt"></i> Issue Invoice
+        </button>
+        <div class="user-profile">
+          <div class="avatar">CS</div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content Body -->
+    <main class="content-body">
+
+      <!-- Navigation Tabs: Records vs Invoices -->
+      <div style="display: flex; gap: 1rem; border-bottom: 2px solid var(--border); margin-bottom: 1.5rem;">
+        <button id="tabBtnRecords" class="btn" style="border-radius: 0; border-bottom: 3px solid var(--primary); background: transparent; color: var(--primary); font-weight: 700; padding: 0.75rem 1.25rem;" onclick="switchBillingTab('records')">
+          <i class="fas fa-file-medical"></i> Medical Records
+        </button>
+        <button id="tabBtnInvoices" class="btn" style="border-radius: 0; border-bottom: 3px solid transparent; background: transparent; color: var(--text-muted); font-weight: 600; padding: 0.75rem 1.25rem;" onclick="switchBillingTab('invoices')">
+          <i class="fas fa-receipt"></i> Billing & Invoices
+        </button>
+      </div>
+
+      <!-- Tab 1: Medical Records Section -->
+      <section id="sectionRecords">
+        <div class="card">
+          <div class="card-header">
+            <h2><i class="fas fa-clipboard-list" style="color: var(--primary);"></i> Patient Diagnosis & Prescriptions</h2>
+          </div>
+          <div class="card-body" style="padding: 0;">
+            <div class="table-responsive">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Record ID</th>
+                    <th>Date</th>
+                    <th>Patient Name</th>
+                    <th>Doctor</th>
+                    <th>Vitals (BP / Temp / HR)</th>
+                    <th>Diagnosis Summary</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="recordsTableBody">
+                  <!-- Injected via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tab 2: Billing & Invoices Section -->
+      <section id="sectionInvoices" style="display: none;">
+        <div class="card">
+          <div class="card-header">
+            <h2><i class="fas fa-file-invoice" style="color: var(--primary);"></i> Invoice History</h2>
+            <button class="btn btn-primary btn-sm" onclick="openModal('createInvoiceModal')">
+              <i class="fas fa-plus"></i> Create New Invoice
+            </button>
+          </div>
+          <div class="card-body" style="padding: 0;">
+            <div class="table-responsive">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Invoice ID</th>
+                    <th>Date</th>
+                    <th>Patient Name</th>
+                    <th>Total Amount</th>
+                    <th>Payment Method</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="invoicesTableBody">
+                  <!-- Injected via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Modal: Add New Medical Record -->
+  <div class="modal-overlay" id="addRecordModal">
+    <div class="modal" style="max-width: 700px;">
+      <div class="modal-header">
+        <h3><i class="fas fa-file-medical" style="color: var(--primary);"></i> Add Medical Record</h3>
+        <button class="modal-close" onclick="closeModal('addRecordModal')">&times;</button>
+      </div>
+      <form id="recordForm">
+        <div class="modal-body">
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Select Patient *</label>
+              <select id="recPatientSelect" required></select>
+            </div>
+
+            <div class="form-group">
+              <label>Attending Doctor *</label>
+              <select id="recDoctorSelect" required></select>
+            </div>
+
+            <!-- Vitals Grid -->
+            <div class="form-group">
+              <label>Blood Pressure (BP)</label>
+              <input type="text" id="recBp" placeholder="120/80 mmHg">
+            </div>
+
+            <div class="form-group">
+              <label>Body Temp (°C)</label>
+              <input type="text" id="recTemp" placeholder="36.8 °C">
+            </div>
+
+            <div class="form-group">
+              <label>Heart Rate</label>
+              <input type="text" id="recHr" placeholder="72 bpm">
+            </div>
+
+            <div class="form-group">
+              <label>Body Weight (kg)</label>
+              <input type="text" id="recWeight" placeholder="60 kg">
+            </div>
+
+            <div class="form-group full-width">
+              <label>Primary Diagnosis *</label>
+              <textarea id="recDiagnosis" rows="2" placeholder="Clinical diagnosis notes..." required></textarea>
+            </div>
+
+            <div class="form-group full-width">
+              <label>Treatment / Action Plan</label>
+              <textarea id="recTreatment" rows="2" placeholder="Recommended treatment or procedure..."></textarea>
+            </div>
+
+            <div class="form-group full-width">
+              <label>Prescribed Medications (Format: Medication - Dosage - Duration)</label>
+              <textarea id="recMeds" rows="2" placeholder="Amoxicillin 500mg - 1 Tab 3x daily - 7 days"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('addRecordModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save Medical Record</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Create Invoice -->
+  <div class="modal-overlay" id="createInvoiceModal">
+    <div class="modal" style="max-width: 650px;">
+      <div class="modal-header">
+        <h3><i class="fas fa-file-invoice-dollar" style="color: var(--primary);"></i> Issue Billing Invoice</h3>
+        <button class="modal-close" onclick="closeModal('createInvoiceModal')">&times;</button>
+      </div>
+      <form id="invoiceForm">
+        <div class="modal-body">
+          <div class="form-grid">
+            <div class="form-group full-width">
+              <label>Select Patient *</label>
+              <select id="invPatientSelect" required></select>
+            </div>
+
+            <div class="form-group">
+              <label>Consultation Fee ($)</label>
+              <input type="number" step="0.01" id="invConsultFee" value="25.00" required>
+            </div>
+
+            <div class="form-group">
+              <label>Pharmacy / Medication Fee ($)</label>
+              <input type="number" step="0.01" id="invMedsFee" value="15.00" required>
+            </div>
+
+            <div class="form-group">
+              <label>Lab / Test Fee ($)</label>
+              <input type="number" step="0.01" id="invLabFee" value="0.00">
+            </div>
+
+            <div class="form-group">
+              <label>Payment Method</label>
+              <select id="invPaymentMethod">
+                <option value="Cash">Cash</option>
+                <option value="ABA Pay / Banking">ABA Pay / Banking</option>
+                <option value="Credit Card">Credit Card</option>
+                <option value="Insurance">Insurance</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Payment Status</label>
+              <select id="invPaymentStatus">
+                <option value="Paid">Paid</option>
+                <option value="Pending">Pending</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('createInvoiceModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary"><i class="fas fa-check-circle"></i> Generate Invoice</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Printable Invoice Preview -->
+  <div class="modal-overlay" id="printInvoiceModal">
+    <div class="modal" style="max-width: 650px;">
+      <div class="modal-header">
+        <h3><i class="fas fa-print" style="color: var(--primary);"></i> Invoice Receipt</h3>
+        <button class="modal-close" onclick="closeModal('printInvoiceModal')">&times;</button>
+      </div>
+      <div class="modal-body" id="invoiceReceiptBody">
+        <!-- JS Injected Printable Invoice -->
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('printInvoiceModal')">Close</button>
+        <button class="btn btn-primary" onclick="window.print()"><i class="fas fa-print"></i> Print Receipt</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+  <script src="js/billing.js"></script>
+</body>
+</html>

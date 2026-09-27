@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Appointment Scheduling - CHAKRIYA Clinic System</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="brand-header">
+      <div class="brand-icon">
+        <i class="fas fa-heartbeat"></i>
+      </div>
+      <div>
+        <div class="brand-title">CHAKRIYA</div>
+        <div class="brand-subtitle">Clinic System</div>
+      </div>
+    </div>
+
+    <ul class="nav-list">
+      <li class="nav-item">
+        <a href="index.html">
+          <i class="fas fa-chart-pie"></i>
+          <span>Dashboard</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="patients.html">
+          <i class="fas fa-user-injured"></i>
+          <span>Patient Management</span>
+        </a>
+      </li>
+      <li class="nav-item active">
+        <a href="appointments.html">
+          <i class="fas fa-calendar-alt"></i>
+          <span>Appointments</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="billing.html">
+          <i class="fas fa-file-invoice-dollar"></i>
+          <span>Records & Billing</span>
+        </a>
+      </li>
+    </ul>
+
+    <div class="sidebar-footer">
+      <p><i class="fas fa-clinic-medical"></i> CHAKRIYA Clinic v1.0</p>
+      <button class="btn btn-danger btn-sm" onclick="triggerClearData()" style="margin-top: 8px; width: 100%; justify-content: center; font-size: 0.75rem;">
+        <i class="fas fa-trash-alt"></i> Clear System Data
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main Content Wrapper -->
+  <div class="main-wrapper">
+    <!-- Top Header Navigation -->
+    <header class="top-header">
+      <div class="header-title-area">
+        <h1>Appointment Scheduling</h1>
+        <p>Book, reschedule, and track patient consultations</p>
+      </div>
+
+      <div class="header-actions">
+        <button class="btn btn-primary" onclick="openModal('appointmentModal')">
+          <i class="fas fa-plus-circle"></i> Book Appointment
+        </button>
+        <div class="user-profile">
+          <div class="avatar">CS</div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Content Body -->
+    <main class="content-body">
+
+      <!-- Appointment Status Filter Tabs -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+        <div style="display: flex; gap: 0.5rem; background: var(--bg-card); padding: 0.35rem; border-radius: var(--radius-lg); border: 1px solid var(--border);">
+          <button class="btn btn-sm apt-tab active" data-status="ALL" style="background: var(--primary); color: white;">All Appointments</button>
+          <button class="btn btn-sm apt-tab btn-secondary" data-status="Confirmed">Confirmed</button>
+          <button class="btn btn-sm apt-tab btn-secondary" data-status="In Progress">In Progress</button>
+          <button class="btn btn-sm apt-tab btn-secondary" data-status="Completed">Completed</button>
+          <button class="btn btn-sm apt-tab btn-secondary" data-status="Cancelled">Cancelled</button>
+        </div>
+
+        <div class="quick-search">
+          <i class="fas fa-search"></i>
+          <input type="text" id="aptSearchInput" placeholder="Filter doctor or patient...">
+        </div>
+      </div>
+
+      <!-- Doctor Schedule Overview Cards Grid -->
+      <div class="card">
+        <div class="card-header">
+          <h2><i class="fas fa-calendar-check" style="color: var(--primary);"></i> Scheduled Consultations</h2>
+        </div>
+        <div class="card-body" style="padding: 0;">
+          <div class="table-responsive">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Appointment ID</th>
+                  <th>Patient Name</th>
+                  <th>Assigned Doctor</th>
+                  <th>Specialty</th>
+                  <th>Date & Time</th>
+                  <th>Reason / Symptoms</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="appointmentsTableBody">
+                <!-- JS Injected Rows -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Book Appointment Modal -->
+  <div class="modal-overlay" id="appointmentModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3><i class="fas fa-calendar-plus" style="color: var(--primary);"></i> Schedule Consultation</h3>
+        <button class="modal-close" onclick="closeModal('appointmentModal')">&times;</button>
+      </div>
+      <form id="appointmentForm">
+        <div class="modal-body">
+          <div class="form-grid">
+            <div class="form-group full-width">
+              <label>Select Patient *</label>
+              <select id="aptModalPatient" required>
+                <!-- JS Populated -->
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Select Doctor *</label>
+              <select id="aptModalDoctor" required>
+                <!-- JS Populated -->
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Appointment Date *</label>
+              <input type="date" id="aptModalDate" required>
+            </div>
+
+            <div class="form-group">
+              <label>Time Slot *</label>
+              <select id="aptModalTime" required>
+                <option value="08:30 AM">08:30 AM</option>
+                <option value="09:00 AM">09:00 AM</option>
+                <option value="10:00 AM">10:00 AM</option>
+                <option value="10:30 AM">10:30 AM</option>
+                <option value="11:30 AM">11:30 AM</option>
+                <option value="02:00 PM">02:00 PM</option>
+                <option value="03:30 PM">03:30 PM</option>
+                <option value="04:30 PM">04:30 PM</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Initial Status</label>
+              <select id="aptModalStatus">
+                <option value="Confirmed">Confirmed</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Completed">Completed</option>
+              </select>
+            </div>
+
+            <div class="form-group full-width">
+              <label>Reason for Visit / Clinical Notes *</label>
+              <textarea id="aptModalReason" rows="3" placeholder="Symptoms, checkup routine, follow-up..." required></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('appointmentModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary"><i class="fas fa-check"></i> Book Appointment</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+  <script src="js/appointments.js"></script>
+</body>
+</html>
