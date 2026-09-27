@@ -24,10 +24,13 @@ class ClinicApp {
   constructor() {
     this.isBackendOnline = false;
     this.initStorage();
-    this.checkBackendHealth();
+    document.addEventListener('DOMContentLoaded', () => {
+      this.checkBackendHealth();
+    });
   }
 
   async checkBackendHealth() {
+    const badgeEl = document.getElementById('dbStatusBadge');
     try {
       const res = await fetch(`${API_BASE_URL}/health`);
       if (res.ok) {
@@ -35,7 +38,12 @@ class ClinicApp {
         if (data.database === 'connected') {
           this.isBackendOnline = true;
           console.log('✅ Connected to PostgreSQL 18 Backend!');
+          if (badgeEl) {
+            badgeEl.className = 'badge badge-success';
+            badgeEl.innerHTML = `<i class="fas fa-database"></i> PostgreSQL 18: Connected`;
+          }
           await this.syncFromBackend();
+          this.refreshActivePageTables();
           return;
         }
       }
@@ -43,6 +51,20 @@ class ClinicApp {
       console.log('ℹ️ Operating in Browser Storage mode. Backend offline or initializing.');
     }
     this.isBackendOnline = false;
+    if (badgeEl) {
+      badgeEl.className = 'badge badge-warning';
+      badgeEl.innerHTML = `<i class="fas fa-database"></i> LocalStorage Mode`;
+    }
+  }
+
+  refreshActivePageTables() {
+    if (typeof renderDashboardStats === 'function') renderDashboardStats();
+    if (typeof renderTodayAppointments === 'function') renderTodayAppointments();
+    if (typeof renderRecentPatients === 'function') renderRecentPatients();
+    if (typeof renderPatientsTable === 'function') renderPatientsTable();
+    if (typeof renderAppointmentsTable === 'function') renderAppointmentsTable();
+    if (typeof renderRecordsTable === 'function') renderRecordsTable();
+    if (typeof renderInvoicesTable === 'function') renderInvoicesTable();
   }
 
   async syncFromBackend() {
@@ -147,7 +169,8 @@ class ClinicApp {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(patientData)
-      }).catch(err => console.error('PostgreSQL Patient save error:', err));
+      }).then(() => this.syncFromBackend())
+        .catch(err => console.error('PostgreSQL Patient save error:', err));
     }
 
     return newPatient;
@@ -160,6 +183,7 @@ class ClinicApp {
 
     if (this.isBackendOnline) {
       fetch(`${API_BASE_URL}/patients/${id}`, { method: 'DELETE' })
+        .then(() => this.syncFromBackend())
         .catch(err => console.error('PostgreSQL Patient delete error:', err));
     }
   }
@@ -181,7 +205,8 @@ class ClinicApp {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(aptData)
-      }).catch(err => console.error('PostgreSQL Appointment save error:', err));
+      }).then(() => this.syncFromBackend())
+        .catch(err => console.error('PostgreSQL Appointment save error:', err));
     }
 
     return newApt;
@@ -200,7 +225,8 @@ class ClinicApp {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus })
-      }).catch(err => console.error('PostgreSQL Appointment status error:', err));
+      }).then(() => this.syncFromBackend())
+        .catch(err => console.error('PostgreSQL Appointment status error:', err));
     }
   }
 
@@ -211,6 +237,7 @@ class ClinicApp {
 
     if (this.isBackendOnline) {
       fetch(`${API_BASE_URL}/appointments/${id}`, { method: 'DELETE' })
+        .then(() => this.syncFromBackend())
         .catch(err => console.error('PostgreSQL Appointment delete error:', err));
     }
   }
@@ -232,7 +259,8 @@ class ClinicApp {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(recordData)
-      }).catch(err => console.error('PostgreSQL Record save error:', err));
+      }).then(() => this.syncFromBackend())
+        .catch(err => console.error('PostgreSQL Record save error:', err));
     }
 
     return newRecord;
@@ -254,7 +282,8 @@ class ClinicApp {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(invoiceData)
-      }).catch(err => console.error('PostgreSQL Invoice save error:', err));
+      }).then(() => this.syncFromBackend())
+        .catch(err => console.error('PostgreSQL Invoice save error:', err));
     }
 
     return newInvoice;
@@ -274,7 +303,8 @@ class ClinicApp {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status, method })
-      }).catch(err => console.error('PostgreSQL Invoice payment error:', err));
+      }).then(() => this.syncFromBackend())
+        .catch(err => console.error('PostgreSQL Invoice payment error:', err));
     }
   }
 }
