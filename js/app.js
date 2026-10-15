@@ -3,7 +3,9 @@
  * Supports PostgreSQL 18 Backend API (http://localhost:5000/api) with LocalStorage sync & fallback.
  */
 
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = (typeof window !== 'undefined' && window.location.protocol.startsWith('http'))
+  ? `${window.location.origin}/api`
+  : 'http://localhost:5050/api';
 
 const STORAGE_KEYS = {
   PATIENTS: 'chakriya_patients',
